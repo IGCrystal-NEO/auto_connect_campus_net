@@ -11,22 +11,23 @@
 > 需要根据具体的校园网服务以及其抓包结果以对代码进行更细致地调整。（例如部分学校并没有提供运营商选项、或者存在验证码）
 
 ## 环境依赖
-- Python 3.11
-- Python 库: `requests`
+- Python 3.11+（实际已在 3.13 验证构建）
+- 运行库：`aiohttp`（见 requirements.txt）
 
 ## 步骤
 
 >[!tip]
 > 
-> 其实有不懂的地方可以多问问 `ChatGPT`，一般情况下它能够解决你大部分的问题。
+> 其实有不懂的地方可以多问问 `AI` ，推荐 `ChatGPT`，一般情况下它能够解决你大部分的问题。
 
 1. 我的 `Python` 版本为 3.11 ，估计其他版本也行。
 2. 安装必要的依赖 
    
-```Python
-pip install requests
+```bash
+pip install -r requirements.txt
 ```
 1. 具体的抓包步骤，我觉得这个[文档](https://github.com/AaronZSAM101/CampusNetworkConnection/blob/main/README.md)可以参考，因为我实际操作的时候的步骤和他写的差不多。
+   
 2. 抓到包后，将 `config.example.json` 复制为 `config.json`，并把你的学号、加密后的密码、JSESSIONID、运营商等信息填入对应字段；`config.json` 已加入 `.gitignore`，不要把真实机密提交到仓库。
 
 3. 当上面的脚本编写完成后，打包成 `.exe` 文件，然后将该 `.exe` 添加到计划任务里面。具体操作如下：

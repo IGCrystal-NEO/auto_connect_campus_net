@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 import aiohttp
 
-# 从配置文件加载敏感信息与站点参数
 def load_config():
     """加载配置文件 config.json（或 CAMPUSNET_CONFIG 环境变量指定的路径）。
 
@@ -19,24 +18,19 @@ def load_config():
     """
     candidates = []
 
-    # 1) 环境变量绝对路径
     env_path = os.getenv("CAMPUSNET_CONFIG")
     if env_path:
         candidates.append(env_path)
 
-    # 2) 当前工作目录
     candidates.append(os.path.join(os.getcwd(), "config.json"))
 
-    # 3) 可执行文件所在目录（打包后）
     if getattr(sys, "frozen", False):
         exe_dir = os.path.dirname(sys.executable)
         candidates.append(os.path.join(exe_dir, "config.json"))
 
-    # 4) 源文件所在目录（开发时）
     script_dir = os.path.dirname(os.path.abspath(__file__))
     candidates.append(os.path.join(script_dir, "config.json"))
 
-    # 5) PyInstaller 临时目录（如果把示例一起打包，可作为最后兜底）
     meipass = getattr(sys, "_MEIPASS", None)
     if meipass:
         candidates.append(os.path.join(meipass, "config.json"))
@@ -57,7 +51,6 @@ def load_config():
 
 def build_runtime_from_config(cfg: dict):
     """根据配置组装运行所需的 URL、Headers 与 Cookies。"""
-    # 登录地址（可在 config.json 覆盖），默认使用示例校园网地址
     login_url = cfg.get(
         "login_url",
         "http://10.71.29.181/eportal/InterFace.do?method=login",
@@ -93,22 +86,18 @@ def build_runtime_from_config(cfg: dict):
         "Host": host,
         "User-Agent": user_agent,
     }
-    # 如果配置里有 JSESSIONID，按原逻辑附加同名 Header（部分门户需要）
     jsessionid = cookies.get("JSESSIONID")
     if jsessionid:
         headers["JSESSIONID"] = jsessionid
 
-    # 用于 POST 的 service 与 user_group 参数
     service = cfg.get("service", cookies.get("EPORTAL_COOKIE_SERVER", ""))
     user_group = cfg.get("user_group", cookies.get("EPORTAL_USER_GROUP", ""))
 
     return login_url, headers, cookies, service, user_group
 
-
 # 检查是否已登录校园网
 async def check_network_status(session: aiohttp.ClientSession) -> bool:
     try:
-        # 访问 HTTP 页面以检测是否被门户拦截（不跟随重定向，避免跳到 HTTPS）
         async with session.get(
             "http://www.baidu.com", allow_redirects=False, timeout=aiohttp.ClientTimeout(total=8)
         ) as resp:
@@ -123,7 +112,6 @@ async def check_network_status(session: aiohttp.ClientSession) -> bool:
         return False
 
 
-# 获取 query_string
 async def get_query_string(session: aiohttp.ClientSession) -> str:
     async with session.get("http://10.71.29.181/", timeout=aiohttp.ClientTimeout(total=8)) as resp:
         html = await resp.text(errors="ignore")
@@ -183,28 +171,19 @@ async def do_login(session: aiohttp.ClientSession, login_url: str, headers: dict
 
 
 async def main():
-    # 加载配置与运行参数
     cfg = load_config()
     login_url, headers, cookies, service, _user_group = build_runtime_from_config(cfg)
 
-    # 一个无 SSL 校验的 Connector（避免任何 https 验证；尽量保持 http）
     connector = aiohttp.TCPConnector(ssl=False)
 
-    # 先用一个轻量会话检测网络
-    async with aiohttp.ClientSession(connector=connector) as check_sess:
-        online = await check_network_status(check_sess)
-
-    if not online:
-        # 使用带默认 headers/cookies 的会话执行登录
-        async with aiohttp.ClientSession(connector=connector, headers=headers, cookies=cookies) as sess:
+    async with aiohttp.ClientSession(connector=connector, headers=headers, cookies=cookies) as sess:
+        online = await check_network_status(sess)
+        if not online:
             await do_login(sess, login_url, headers, cookies, service)
-    else:
-        print("跳过登录")
+        else:
+            print("跳过登录")
 
-
-# 运行检测和登录
 if __name__ == "__main__":
-    # Windows 上选择 SelectorEventLoop，兼容性更好
     if os.name == "nt":
         try:
             import asyncio
