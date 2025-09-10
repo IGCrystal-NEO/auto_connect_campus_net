@@ -1,16 +1,16 @@
 {
-  "login_url": "http://10.71.29.181/eportal/InterFace.do?method=login",
-  "service": "%E4%B8%AD%E5%9B%BD%E7%94%B5%E4%BF%A1",
-  "user_group": "%E5%AD%A6%E7%94%9F",
+  "login_url": "你的校园网登录地址",
+  "service": "运营商名称（例如: 中国电信是 %E4%B8%AD%E5%9B%BD%E7%94%B5%E4%BF%A1），不同的学校可能不一样，这需要你具体抓包分析",
+  "user_group": "身份组（例如: 学生，老师），例如: 学生是 %E5%AD%A6%E7%94%9F，不同的学校可能不一样，这需要你具体抓包分析",
   "headers": {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
   },
   "cookies": {
     "EPORTAL_COOKIE_USERNAME": "你的学号",
     "EPORTAL_COOKIE_PASSWORD": "你的加密后密码",
-    "EPORTAL_COOKIE_SERVER": "%E4%B8%AD%E5%9B%BD%E7%94%B5%E4%BF%A1",
-    "EPORTAL_COOKIE_SERVER_NAME": "%E4%B8%AD%E5%9B%BD%E7%A7%BB%E5%8A%A8",
-    "EPORTAL_USER_GROUP": "%E5%AD%A6%E7%94%9F",
-    "JSESSIONID": "从抓包里复制"
+    "EPORTAL_COOKIE_SERVER": "同运营商名称",
+    "EPORTAL_COOKIE_SERVER_NAME": "同运营商名称",
+    "EPORTAL_USER_GROUP": "同身份组",
+    "JSESSIONID": "标识用户会话的一个唯一 ID，只能从抓包里复制。"
   }
 }
