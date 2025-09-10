@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['Auto-Connect-CampusNet.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
     datas=[],
