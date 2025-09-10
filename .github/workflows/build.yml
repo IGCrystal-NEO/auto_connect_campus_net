@@ -1,18 +1,27 @@
-name: Build and Release EXE (single .exe)
+name: Build and Release EXE (manual, auto-tag)
 
+# 仅手动触发，用户在触发时填写 version（例如: 1.2.3 或 v1.2.3）
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.2.3 or v1.2.3)'
+        required: true
+        default: '1.0.0'
+
+# 需要写权限以便创建 tag & release
+permissions:
+  contents: write
 
 jobs:
   build-and-release:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout repo
+      - name: Checkout repository (fetch tags)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -44,18 +53,48 @@ jobs:
             Write-Error "No .exe found in dist directory. Build may have failed."
             exit 1
           }
-          # 导出为 step outputs
           echo "exe_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
           echo "exe_name=$($exe.Name)" >> $env:GITHUB_OUTPUT
           Write-Host "Found exe: $($exe.FullName)"
+
+      - name: Compose tag name (prepend v if needed)
+        id: compose_tag
+        shell: pwsh
+        run: |
+          $input = "${{ github.event.inputs.version }}"
+          if ($input.StartsWith('v')) {
+            $tag = $input
+          } else {
+            $tag = "v$input"
+          }
+          echo "TAG=$tag" >> $env:GITHUB_ENV
+          Write-Host "Computed TAG: $tag"
+
+      - name: Ensure tag does not already exist && create & push tag
+        shell: pwsh
+        env:
+          TAG: ${{ env.TAG }}
+        run: |
+          Write-Host "Checking if tag $env:TAG exists on remote..."
+          $exists = git ls-remote --tags origin $env:TAG
+          if ($exists) {
+            Write-Error "Tag $env:TAG already exists on remote. Aborting to avoid overwrite."
+            exit 1
+          }
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a $env:TAG -m "Release $env:TAG"
+          # Ensure we can push using the checked-out credentials (actions/checkout persist-credentials)
+          git push origin $env:TAG
+          Write-Host "Tag $env:TAG created and pushed."
 
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          body: Release ${{ github.ref_name }}
+          tag_name: ${{ env.TAG }}
+          release_name: ${{ env.TAG }}
+          body: "Release ${{ env.TAG }}"
           draft: false
           prerelease: false
         env:
