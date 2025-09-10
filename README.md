@@ -10,19 +10,17 @@
 
 ## 步骤
 
-1. `Python` 版本为 3.11 ，估计其他版本也行。
-   
-2. 安装必要的依赖 
+1. 安装必要的依赖 
    
 ```bash
 pip install -r requirements.txt
 ```
 
-1. 具体的抓包步骤，可以参考[该内容](https://github.com/AaronZSAM101/CampusNetworkConnection/blob/main/README.md)。
+2. 具体的抓包步骤，可以参考[该内容](https://github.com/AaronZSAM101/CampusNetworkConnection/blob/main/README.md)。
    
-2. 抓到包后，将 `config.example.json` 复制为 `config.json`，并把你的学号、加密后的密码、JSESSIONID、运营商等信息填入对应字段；`config.json` 已加入 `.gitignore`，不要把真实机密提交到仓库。
+3. 抓到包后，将 `config.example.json` 复制为 `config.json`，并把你的学号、加密后的密码、JSESSIONID、运营商等信息填入对应字段；`config.json` 已加入 `.gitignore`，不要把真实机密提交到仓库。
 
-3. 当上面的脚本编写完成后，打包成 `.exe` 文件，然后将该 `.exe` 添加到计划任务里面。具体操作如下：
+4. 当上面的脚本编写完成后，打包成 `.exe` 文件，然后将该 `.exe` 添加到计划任务里面。具体操作如下：
 
    要将 `.exe` 文件添加到计划任务中，可以通过 Windows 的任务计划程序实现。以下是具体操作方法：
    
