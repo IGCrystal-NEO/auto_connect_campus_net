@@ -20,12 +20,7 @@ pip install -r requirements.txt
    
 3. 抓到包后，将 `config.example.json` 复制为 `config.json`，并把你的学号、加密后的密码、JSESSIONID、运营商等信息填入对应字段；`config.json` 已加入 `.gitignore`，不要把真实机密提交到仓库。
 
-4. 当上面的脚本编写完成后，打包成 `.exe` 文件，然后将该 `.exe` 添加到计划任务里面。具体操作如下：
-
-   要将 `.exe` 文件添加到计划任务中，可以通过 Windows 的任务计划程序实现。以下是具体操作方法：
-   
-   将 `.exe` 文件设置为开机启动有以下几种方法：
-   
+4. 当上面的脚本编写完成后，打包成 `.exe` 文件，也可以从release中下载打包好的 `exe`，将 `config.json` 放在和 `exe` 同一目录下。然后将该 `.exe` 添加到计划任务里面。具体操作如下：
    
    **方法一：使用任务计划程序设置开机启动**
    
