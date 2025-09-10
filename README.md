@@ -5,16 +5,13 @@
 >参考了 [该仓库](https://github.com/AaronZSAM101/CampusNetworkConnection) 的内容。
 
 ## 环境依赖
-- Python 3.11+（实际已在 3.13 验证构建）
+- Python 3.11+
 - 运行库：`aiohttp`（见 requirements.txt）
 
 ## 步骤
 
->[!tip]
-> 
-> 其实有不懂的地方可以多问问 `AI` ，推荐 `ChatGPT`，一般情况下它能够解决你大部分的问题。
-
-1. 我的 `Python` 版本为 3.11 ，估计其他版本也行。
+1. `Python` 版本为 3.11 ，估计其他版本也行。
+   
 2. 安装必要的依赖 
    
 ```bash
@@ -32,9 +29,9 @@ pip install -r requirements.txt
    将 `.exe` 文件设置为开机启动有以下几种方法：
    
    
-   ### 方法一：使用任务计划程序设置开机启动
+   **方法一：使用任务计划程序设置开机启动**
    
-   ### 方法二：使用第三方工具
+   **方法二：使用第三方工具**
 
 ## 最后
 
