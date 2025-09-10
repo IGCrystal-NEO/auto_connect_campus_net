@@ -3,6 +3,8 @@
 >[!tip]
 > 
 >参考了 [该仓库](https://github.com/AaronZSAM101/CampusNetworkConnection) 的内容。
+>
+>适用于 锐捷 所开发的校园网登录平台。
 
 ## 环境依赖
 - Python 3.11+
