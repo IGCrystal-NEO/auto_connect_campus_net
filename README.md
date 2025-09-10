@@ -2,13 +2,7 @@
 
 >[!tip]
 > 
-> 本仓库作为个人学习的备份。
-> 
-> 该脚本适用于锐捷网络所开发的校园网登录平台。
->
-> 理论上，只要是采用了锐捷校园网的学校，均可使用本脚本进行登录。
->
-> 需要根据具体的校园网服务以及其抓包结果以对代码进行更细致地调整。（例如部分学校并没有提供运营商选项、或者存在验证码）
+>参考了 [该仓库](https://github.com/AaronZSAM101/CampusNetworkConnection) 的内容。
 
 ## 环境依赖
 - Python 3.11+（实际已在 3.13 验证构建）
@@ -26,7 +20,7 @@
 ```bash
 pip install -r requirements.txt
 ```
-1. 具体的抓包步骤，我觉得这个[文档](https://github.com/AaronZSAM101/CampusNetworkConnection/blob/main/README.md)可以参考，因为我实际操作的时候的步骤和他写的差不多。
+1. 具体的抓包步骤，我觉得这个[资料](https://github.com/AaronZSAM101/CampusNetworkConnection/blob/main/README.md)可以参考，因为我实际操作的时候的步骤和他写的差不多。
    
 2. 抓到包后，将 `config.example.json` 复制为 `config.json`，并把你的学号、加密后的密码、JSESSIONID、运营商等信息填入对应字段；`config.json` 已加入 `.gitignore`，不要把真实机密提交到仓库。
 
