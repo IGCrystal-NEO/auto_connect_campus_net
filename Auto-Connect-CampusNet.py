@@ -1,21 +1,52 @@
+import asyncio
 import json
 import os
+import sys
 from urllib.parse import urlparse
 
-import requests
+import aiohttp
 
 # 从配置文件加载敏感信息与站点参数
 def load_config():
-    """加载配置文件 config.json（或 CAMPUSNET_CONFIG 环境变量指定的路径）。"""
-    config_path = os.getenv("CAMPUSNET_CONFIG")
-    if not config_path:
-        # 默认读取与脚本同目录的 config.json
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(base_dir, "config.json")
+    """加载配置文件 config.json（或 CAMPUSNET_CONFIG 环境变量指定的路径）。
 
-    if not os.path.exists(config_path):
+    搜索顺序：
+    1) 环境变量 CAMPUSNET_CONFIG 指定的绝对路径
+    2) 当前工作目录 ./config.json
+    3) 可执行文件所在目录（打包后与 exe 同目录）
+    4) 源文件所在目录（开发运行）
+    5) PyInstaller 临时目录（仅在将示例一起打包时）
+    """
+    candidates = []
+
+    # 1) 环境变量绝对路径
+    env_path = os.getenv("CAMPUSNET_CONFIG")
+    if env_path:
+        candidates.append(env_path)
+
+    # 2) 当前工作目录
+    candidates.append(os.path.join(os.getcwd(), "config.json"))
+
+    # 3) 可执行文件所在目录（打包后）
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, "config.json"))
+
+    # 4) 源文件所在目录（开发时）
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates.append(os.path.join(script_dir, "config.json"))
+
+    # 5) PyInstaller 临时目录（如果把示例一起打包，可作为最后兜底）
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(os.path.join(meipass, "config.json"))
+
+    config_path = next((p for p in candidates if p and os.path.exists(p)), None)
+    if not config_path:
+        searched = " ; ".join(candidates)
         raise FileNotFoundError(
-            f"未找到配置文件: {config_path}。请复制 config.example.json 为 config.json 并填写你的信息。"
+            "未找到配置文件 config.json。请在以下任意位置提供它，或设置 CAMPUSNET_CONFIG：\n"
+            + searched
         )
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -75,43 +106,42 @@ def build_runtime_from_config(cfg: dict):
 
 
 # 检查是否已登录校园网
-def check_network_status():
+async def check_network_status(session: aiohttp.ClientSession) -> bool:
     try:
-        # 访问任意网页（如百度）以检测是否会被重定向
-        response = requests.get("http://www.baidu.com")
-        response_text = response.text
-
-        # 检查是否包含重定向到校园网登录页的 `<script>` 标签
-        if "top.self.location.href='http://10.71.29.181" in response_text:
+        # 访问 HTTP 页面以检测是否被门户拦截（不跟随重定向，避免跳到 HTTPS）
+        async with session.get(
+            "http://www.baidu.com", allow_redirects=False, timeout=aiohttp.ClientTimeout(total=8)
+        ) as resp:
+            text = await resp.text(errors="ignore")
+        if "top.self.location.href='http://10.71.29.181" in text:
             print("未连接校园网，需要登录")
             return False
-        else:
-            print("已连接校园网，无需登录")
-            return True
-
-    except requests.RequestException as e:
+        print("已连接校园网，无需登录")
+        return True
+    except Exception as e:
         print(f"网络请求失败：{e}")
         return False
 
 
 # 获取 query_string
-def get_query_string(session):
-    response = session.get("http://10.71.29.181/")
-    query_string = response.text
-    st = query_string.find("index.jsp?") + 10
-    end = query_string.find("'</script>")
-    query_string = query_string[st:end]
+async def get_query_string(session: aiohttp.ClientSession) -> str:
+    async with session.get("http://10.71.29.181/", timeout=aiohttp.ClientTimeout(total=8)) as resp:
+        html = await resp.text(errors="ignore")
+    st = html.find("index.jsp?")
+    if st == -1:
+        print("未在门户页面中找到 query_string 入口，请检查门户地址是否正确。")
+        return ""
+    st += 10
+    end = html.find("'</script>", st)
+    if end == -1:
+        end = len(html)
+    query_string = html[st:end]
     print("获取到 query_string:", query_string)
     return query_string
 
 
-def login():
-    # 加载配置并构建运行参数
-    cfg = load_config()
-    login_url, headers, cookies, service, _user_group = build_runtime_from_config(cfg)
-
-    session = requests.Session()
-    query_string = get_query_string(session)
+async def do_login(session: aiohttp.ClientSession, login_url: str, headers: dict, cookies: dict, service: str):
+    query_string = await get_query_string(session)
     post_data = {
         "userId": cookies.get("EPORTAL_COOKIE_USERNAME", ""),
         "password": cookies.get("EPORTAL_COOKIE_PASSWORD", ""),
@@ -123,13 +153,27 @@ def login():
         "passwordEncrypt": "true",
     }
 
-    response = session.post(login_url, headers=headers, data=post_data, cookies=cookies)
     try:
-        data = response.json()
-    except ValueError:
-        print("登录失败：返回内容不是 JSON，可能门户接口或参数有变动。")
-        print("响应状态码:", response.status_code)
-        print("响应文本片段:", response.text[:200])
+        async with session.post(
+            login_url,
+            headers=headers,
+            data=post_data,
+            cookies=cookies,
+            allow_redirects=False,  # 避免跳往 https
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as resp:
+            # 尝试解析 JSON
+            text = await resp.text(errors="ignore")
+            try:
+                data = await resp.json(content_type=None)
+            except Exception:
+                print("登录失败：返回内容不是 JSON，可能门户接口或参数有变动。")
+                print("响应状态码:", resp.status)
+                print("响应文本片段:", text[:200])
+                return
+
+    except Exception as e:
+        print("登录请求失败：", e)
         return
 
     if data.get("result") == "success":
@@ -138,8 +182,34 @@ def login():
         print("登录失败，原因:", data.get("message"))
 
 
+async def main():
+    # 加载配置与运行参数
+    cfg = load_config()
+    login_url, headers, cookies, service, _user_group = build_runtime_from_config(cfg)
+
+    # 一个无 SSL 校验的 Connector（避免任何 https 验证；尽量保持 http）
+    connector = aiohttp.TCPConnector(ssl=False)
+
+    # 先用一个轻量会话检测网络
+    async with aiohttp.ClientSession(connector=connector) as check_sess:
+        online = await check_network_status(check_sess)
+
+    if not online:
+        # 使用带默认 headers/cookies 的会话执行登录
+        async with aiohttp.ClientSession(connector=connector, headers=headers, cookies=cookies) as sess:
+            await do_login(sess, login_url, headers, cookies, service)
+    else:
+        print("跳过登录")
+
+
 # 运行检测和登录
-if not check_network_status():
-    login()
-else:
-    print("跳过登录")
+if __name__ == "__main__":
+    # Windows 上选择 SelectorEventLoop，兼容性更好
+    if os.name == "nt":
+        try:
+            import asyncio
+
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        except Exception:
+            pass
+    asyncio.run(main())
